@@ -66,7 +66,9 @@ class EqualWeightPortfolio:
         """
         TODO: Complete Task 1 Below
         """
-
+        weight_per_asset = 1 / len(assets)
+        for asset in assets:
+            self.portfolio_weights[asset] = weight_per_asset
         """
         TODO: Complete Task 1 Above
         """
@@ -117,7 +119,16 @@ class RiskParityPortfolio:
         """
         TODO: Complete Task 2 Below
         """
+        R_n = []
+        for i in range(self.lookback + 1, len(df)):
+            R_n = df_returns.copy()[assets].iloc[i - self.lookback : i]
+        
+            sum = 0.0
+            for asset in assets:
+                sum += 1 / R_n[asset].std()
 
+            for asset in assets:
+                self.portfolio_weights[asset] = (1 / R_n[asset].std()) / sum
         """
         TODO: Complete Task 2 Above
         """
@@ -189,6 +200,11 @@ class MeanVariancePortfolio:
                 """
                 TODO: Complete Task 3 Below
                 """
+
+                # Sample Code: Initialize Decision w and the Objective
+                # NOTE: You can modify the following code
+                w = model.addMVar(n, name="w", ub=1)
+                model.setObjective(w.sum(), gp.GRB.MAXIMIZE)
 
                 """
                 TODO: Complete Task 3 Below
@@ -363,7 +379,7 @@ class AssignmentJudge:
             if (
                 df1[column].dtype.kind in "bifc" and df2[column].dtype.kind in "bifc"
             ):  # Check only numeric types
-                if not np.isclose(df1[column], df2[column], rtol=tolerance).all():
+                if not np.isclose(df1[column], df2[column], atol=tolerance).all():
                     return False
             else:
                 if not (df1[column] == df2[column]).all():
@@ -380,7 +396,7 @@ class AssignmentJudge:
             result = self.check_dataframe_similarity(df1, df2, tolerance)
             results.append(result)
 
-        return results
+        return results == [True] * len(results)
 
     def compare_dataframe(self, df1, df2, tolerance=0.01):
         return self.check_dataframe_similarity(df1, df2, tolerance)
