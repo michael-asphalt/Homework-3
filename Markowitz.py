@@ -119,16 +119,16 @@ class RiskParityPortfolio:
         """
         TODO: Complete Task 2 Below
         """
-        R_n = []
+        arr = []
         for i in range(self.lookback + 1, len(df)):
-            R_n = df_returns.copy()[assets].iloc[i - self.lookback : i]
+            std = df_returns[assets].iloc[i - self.lookback : i].std(axis=0)
+            arr.append(std)
         
-            sum = 0.0
-            for asset in assets:
-                sum += 1 / R_n[asset].std()
-
-            for asset in assets:
-                self.portfolio_weights[asset] = (1 / R_n[asset].std()) / sum
+        volatility = pd.DataFrame(arr, index=df.index[self.lookback + 1 :])
+        inv = 1 / volatility
+        inv_sum = inv.sum(axis=1)
+        for i in range(len(inv)):
+            self.portfolio_weights.loc[df.index[self.lookback + 1 + i]] = inv.iloc[i] / inv_sum.iloc[i]
         """
         TODO: Complete Task 2 Above
         """
@@ -200,17 +200,16 @@ class MeanVariancePortfolio:
                 """
                 TODO: Complete Task 3 Below
                 """
+                w = model.addMVar(n, name="w", lb=0, ub=1)  
 
-                # Sample Code: Initialize Decision w and the Objective
-                # NOTE: You can modify the following code
-                w = model.addMVar(n, name="w", ub=1)
-                model.setObjective(w.sum(), gp.GRB.MAXIMIZE)
+                risk_adjusted_return = w.T @ mu - (gamma / 2) * (w.T @ Sigma @ w)
+                model.setObjective(risk_adjusted_return, gp.GRB.MAXIMIZE)
 
+                model.addConstr(w.sum() == 1)
+                model.optimize()
                 """
                 TODO: Complete Task 3 Below
                 """
-                model.optimize()
-
                 # Check if the status is INF_OR_UNBD (code 4)
                 if model.status == gp.GRB.INF_OR_UNBD:
                     print(
